@@ -1,0 +1,113 @@
+import 'package:flutter/material.dart';
+import 'form_screen.dart';
+import 'dart:math';
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  String? name;
+  int? age;
+  double? height;
+  double? weight;
+  String? advice;
+
+  void _generateAdvice() {
+    if (height == null || weight == null || age == null) return;
+
+    double bmi = weight! / ((height! / 100) * (height! / 100));
+    int calories = 2000 + Random().nextInt(600) - 300; // примерно +/-300
+    List<String> workouts = [
+      "Ходи пешком не менее 8 000 шагов в день.",
+      "Добавь 3 тренировки по 30 минут в неделю.",
+      "Попробуй лёгкое кардио утром и растяжку вечером.",
+      "Пей больше воды — не менее 1.5 литров в день.",
+      "Старайся спать 7–8 часов для восстановления."
+    ];
+    String workout = workouts[Random().nextInt(workouts.length)];
+
+    String food = [
+      "Уменьши сахар и быстрые углеводы.",
+      "Добавь больше белка (мясо, рыба, яйца, бобовые).",
+      "Старайся есть овощи в каждом приёме пищи.",
+      "Не пропускай завтрак — это важно для обмена веществ.",
+      "Ограничь фастфуд и газированные напитки."
+    ][Random().nextInt(5)];
+
+    setState(() {
+      advice =
+      "Твой ИМТ: ${bmi.toStringAsFixed(1)}\n\nРекомендуемая калорийность: ~${calories} ккал/день\n\n🏋️ Советы по активности:\n$workout\n\n🥗 Советы по питанию:\n$food";
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Похудение AI')),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (name == null)
+                const Text('Добро пожаловать!', style: TextStyle(fontSize: 20))
+              else
+                Column(
+                  children: [
+                    Text(
+                      'Привет, $name!',
+                      style: const TextStyle(
+                          fontSize: 22, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Возраст: $age лет\nРост: ${height?.toStringAsFixed(0)} см\nВес: ${weight?.toStringAsFixed(1)} кг',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ],
+                ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const FormScreen()),
+                  );
+                  if (result != null && result is Map<String, dynamic>) {
+                    setState(() {
+                      name = result['name'];
+                      age = result['age'];
+                      height = result['height'];
+                      weight = result['weight'];
+                    });
+                    _generateAdvice();
+                  }
+                },
+                child: Text(name == null ? 'Заполнить анкету' : 'Изменить данные'),
+              ),
+              const SizedBox(height: 20),
+              if (advice != null)
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.teal.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    advice!,
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
