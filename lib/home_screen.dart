@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'form_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -16,11 +17,55 @@ class _HomeScreenState extends State<HomeScreen> {
   double? weight;
   String? advice;
 
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      name = prefs.getString('name');
+      age = prefs.getInt('age');
+      height = prefs.getDouble('height') ?? prefs.getInt('height')?.toDouble();
+      weight = prefs.getDouble('weight') ?? prefs.getInt('weight')?.toDouble();
+    });
+    if (name != null && age != null && height != null && weight != null) {
+      _generateAdvice();
+    }
+  }
+
+  Future<void> _saveData() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('name', name ?? '');
+    await prefs.setInt('age', age ?? 0);
+    await prefs.setDouble('height', height ?? 0.0);
+    await prefs.setDouble('weight', weight ?? 0.0);
+  }
+
+  // Новая функция: сброс всех данных профиля
+  Future<void> _resetProfile() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('name');
+    await prefs.remove('age');
+    await prefs.remove('height');
+    await prefs.remove('weight');
+    setState(() {
+      name = null;
+      age = null;
+      height = null;
+      weight = null;
+      advice = null;
+    });
+  }
+
   void _generateAdvice() {
     if (height == null || weight == null || age == null) return;
 
     double bmi = weight! / ((height! / 100) * (height! / 100));
     int calories = 2000 + Random().nextInt(600) - 300;
+
     List<String> workouts = [
       "Ходи пешком не менее 8 000 шагов в день.",
       "Добавь 3 тренировки по 30 минут в неделю.",
@@ -28,15 +73,17 @@ class _HomeScreenState extends State<HomeScreen> {
       "Пей больше воды — не менее 1.5 литров в день.",
       "Старайся спать 7–8 часов для восстановления."
     ];
-    String workout = workouts[Random().nextInt(workouts.length)];
 
-    String food = [
+    List<String> foods = [
       "Уменьши сахар и быстрые углеводы.",
       "Добавь больше белка (мясо, рыба, яйца, бобовые).",
       "Старайся есть овощи в каждом приёме пищи.",
       "Не пропускай завтрак — это важно для обмена веществ.",
       "Ограничь фастфуд и газированные напитки."
-    ][Random().nextInt(5)];
+    ];
+
+    String workout = workouts[Random().nextInt(workouts.length)];
+    String food = foods[Random().nextInt(foods.length)];
 
     setState(() {
       advice =
@@ -74,7 +121,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    if (name == null)
+                    if (name == null || name!.isEmpty)
                       const Text(
                         'Добро пожаловать!',
                         style: TextStyle(
@@ -96,7 +143,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           Text(
                             'Возраст: $age лет\nРост: ${height?.toStringAsFixed(0)} см\nВес: ${weight?.toStringAsFixed(1)} кг',
                             textAlign: TextAlign.center,
-                            style: const TextStyle(fontSize: 16, color: Colors.white70),
+                            style: const TextStyle(
+                                fontSize: 16, color: Colors.white70),
                           ),
                         ],
                       ),
@@ -114,6 +162,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             height = result['height'];
                             weight = result['weight'];
                           });
+                          await _saveData();
                           _generateAdvice();
                         }
                       },
@@ -123,8 +172,23 @@ class _HomeScreenState extends State<HomeScreen> {
                             horizontal: 30, vertical: 14),
                       ),
                       child: Text(
-                        name == null ? 'Заполнить анкету' : 'Изменить данные',
+                        name == null || name!.isEmpty
+                            ? 'Заполнить анкету'
+                            : 'Изменить данные',
                         style: const TextStyle(fontSize: 16),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    ElevatedButton(
+                      onPressed: _resetProfile,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 30, vertical: 14),
+                      ),
+                      child: const Text(
+                        'Сбросить данные профиля',
+                        style: TextStyle(fontSize: 16),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -150,3 +214,4 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
